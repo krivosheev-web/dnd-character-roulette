@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>D&D Character Roulette — 2014</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:system-ui,sans-serif;background:radial-gradient(circle at top,#3a0d16,#10070b 60%);color:#fff;display:flex;align-items:center;justify-content:center;padding:20px}
+.app{width:min(700px,100%);text-align:center}.title{font-size:clamp(30px,7vw,56px);font-weight:900;letter-spacing:1px;text-shadow:0 4px 20px #000}.sub{opacity:.75;margin-bottom:22px}
+.wheel-wrap{position:relative;width:min(430px,85vw);aspect-ratio:1;margin:auto}.pointer{position:absolute;z-index:3;top:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;border-top:36px solid #f3c64e;filter:drop-shadow(0 3px 4px #000)}
+canvas{width:100%;height:100%;border-radius:50%;box-shadow:0 0 0 8px #2a1116,0 0 45px #000}
+.center{position:absolute;inset:50%;transform:translate(-50%,-50%);width:90px;height:90px;border-radius:50%;background:#171016;border:5px solid #f3c64e;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;z-index:2}
+button{border:0;border-radius:14px;padding:15px 24px;font-size:18px;font-weight:800;cursor:pointer;background:#f3c64e;color:#21100d;box-shadow:0 5px 0 #a57918;margin-top:22px}button:active{transform:translateY(3px);box-shadow:0 2px 0 #a57918}button:disabled{opacity:.5}
+.result{margin-top:22px;background:#1b1015;border:1px solid #57313b;border-radius:16px;padding:18px;font-size:20px;min-height:60px}
+.mode{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0}.mode button{margin:0;padding:9px 13px;font-size:14px;background:#321820;color:#fff;box-shadow:none}.mode button.active{background:#f3c64e;color:#21100d}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="title">⚔️ D&D CHARACTER ROULETTE ⚔️</div>
+<div class="sub">Редакция 2014 • только базовые официальные варианты</div>
+<div class="mode">
+<button class="active" data-mode="race">РАСА</button>
+<button data-mode="class">КЛАСС</button>
+<button data-mode="subclass">ПОДКЛАСС</button>
+</div>
+<div class="wheel-wrap"><div class="pointer"></div><canvas id="wheel" width="700" height="700"></canvas><div class="center">ROLL<br>🎲</div></div>
+<button id="spin">КРУТИТЬ КОЛЕСО</button>
+<div id="result" class="result">Выбери категорию и крути! 😈</div>
+</div>
+<script>
+const data={
+race:["Человек","Дварф","Эльф","Полурослик","Драконорождённый","Гном","Полуэльф","Полуорк","Тифлинг"],
+class:["Варвар","Бард","Жрец","Друид","Воин","Монах","Паладин","Следопыт","Плут","Чародей","Колдун","Волшебник"],
+subclass:{
+"Варвар":["Путь берсерка","Путь тотемного воина"],
+"Бард":["Коллегия знаний","Коллегия доблести"],
+"Жрец":["Домен Знаний","Домен Жизни","Домен Света","Домен Природы","Домен Бури","Домен Обмана","Домен Войны"],
+"Друид":["Круг Земли","Круг Луны"],
+"Воин":["Мастер боевых искусств","Чемпион","Рыцарь Элдритча"],
+"Монах":["Путь открытой ладони","Путь тени","Путь четырёх стихий"],
+"Паладин":["Клятва преданности","Клятва древних","Клятва мести"],
+"Следопыт":["Охотник","Повелитель зверей"],
+"Плут":["Вор","Убийца","Мистический ловкач"],
+"Чародей":["Драконья кровь","Дикая магия"],
+"Колдун":["Архифея","Исчадие","Великий Древний"],
+"Волшебник":["Школа ограждения","Школа вызова","Школа прорицания","Школа очарования","Школа воплощения","Школа иллюзий","Школа некромантии","Школа преобразования"]
+}};
+let mode="race", angle=0, spinning=false;
+const c=document.getElementById("wheel"),ctx=c.getContext("2d"), result=document.getElementById("result");
+function items(){
+ if(mode==="race") return data.race;
+ if(mode==="class") return data.class;
+ return data.subclass[document.querySelector("#result").dataset.class] || Object.values(data.subclass).flat();
+}
+function draw(){
+ const arr=items(), n=arr.length, r=c.width/2;
+ ctx.clearRect(0,0,c.width,c.height);
+ ctx.save();ctx.translate(r,r);ctx.rotate(angle);
+ arr.forEach((x,i)=>{
+   const a=i*2*Math.PI/n, b=(i+1)*2*Math.PI/n;
+   ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,r-5,a,b);ctx.closePath();
+   ctx.fillStyle=`hsl(${i*360/n+5},55%,${30+(i%2)*8}%)`;ctx.fill();ctx.strokeStyle="#f3c64e";ctx.lineWidth=3;ctx.stroke();
+   ctx.save();ctx.rotate((a+b)/2);ctx.textAlign="right";ctx.fillStyle="#fff";ctx.font=`bold ${Math.max(15,Math.min(26,260/n))}px system-ui`;
+   ctx.fillText(x,r-28,8);ctx.restore();
+ });ctx.restore();
+}
+function spin(){
+ if(spinning)return; spinning=true;
+ const arr=items(), n=arr.length, winner=Math.floor(Math.random()*n);
+ const seg=2*Math.PI/n, target=-(winner+.5)*seg;
+ const start=angle, turns=7*2*Math.PI;
+ const final=angle + turns + ((target-angle)%(2*Math.PI));
+ const t0=performance.now(), dur=4200;
+ function anim(t){let p=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-p,4);angle=start+(final-start)*e;draw();if(p<1)requestAnimationFrame(anim);else{spinning=false;result.textContent="🎯 Результат: "+arr[winner]+"!";if(mode==="class")result.dataset.class=arr[winner];}}
+ requestAnimationFrame(anim);
+}
+document.querySelectorAll(".mode button").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll(".mode button").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+ mode=b.dataset.mode; result.textContent=mode==="subclass"?"🎲 Сначала выбери класс — или крути общий список подклассов.":"Выбери категорию и крути! 😈"; draw();
+});
+document.getElementById("spin").onclick=spin; draw();
+</script>
+</body></html>
